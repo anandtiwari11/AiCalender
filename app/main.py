@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.ai_routes import router as ai_router
@@ -13,6 +13,7 @@ from app.api.intelligence import router as intelligence_router
 from app.api.tasks import router as tasks_router
 from app.config import BASE_DIR, settings
 from app.database import Base, engine
+from app.legal_pages import ABOUT_HTML, PRIVACY_HTML, TERMS_HTML
 
 app = FastAPI(title="Cal.ai API", description="AI-native calendar with Google Calendar integration")
 
@@ -47,6 +48,22 @@ def health():
         "google_oauth_configured": settings.google_oauth_configured,
         "frontend_url": settings.frontend_url,
     }
+
+
+@app.get("/about", response_class=HTMLResponse)
+def about_page():
+    """Public marketing page (no login) for Google OAuth home-page checks."""
+    return ABOUT_HTML
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy_policy():
+    return PRIVACY_HTML
+
+
+@app.get("/terms", response_class=HTMLResponse)
+def terms_of_service():
+    return TERMS_HTML
 
 
 if FRONTEND_ASSETS.is_dir():
