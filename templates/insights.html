@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Insights · Cal.ai{% endblock %}
+{% block header_date %}Insights{% endblock %}
+{% block header_sub %}How your time is spent{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <h1>Time insights</h1>
+  <p class="lead">A simple view of meetings vs focus based on your real calendar.</p>
+</section>
+
+<section class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">Meeting hours</div>
+    <div class="stat-value">{{ data.meeting_hours }}h</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Focus hours</div>
+    <div class="stat-value">{{ data.focus_hours }}h</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Events tracked</div>
+    <div class="stat-value">{{ data.event_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Avg meeting load / week</div>
+    <div class="stat-value">{{ data.avg_meeting_load }}h</div>
+  </div>
+</section>
+
+<section class="two-col">
+  <article class="card">
+    <h2>Minutes by weekday</h2>
+    <div class="bars">
+      {% set day_minutes = data.by_day | map(attribute='minutes') | list %}
+      {% set max_m = (day_minutes | max) if day_minutes else 1 %}
+      {% for row in data.by_day %}
+      <div class="bar-row">
+        <span class="bar-label">{{ row.day }}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: {{ ((row.minutes / max_m * 100) if max_m else 0) | round }}%"></div>
+        </div>
+        <span class="bar-val">{{ row.minutes }}m</span>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="card">
+    <h2>By category</h2>
+    <div class="bars">
+      {% set cat_minutes = data.by_category | map(attribute='minutes') | list %}
+      {% set max_c = (cat_minutes | max) if cat_minutes else 1 %}
+      {% for row in data.by_category %}
+      <div class="bar-row">
+        <span class="bar-label">{{ row.category }}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: {{ ((row.minutes / max_c * 100) if max_c else 0) | round }}%; background: {{ row.color }}"></div>
+        </div>
+        <span class="bar-val">{{ row.minutes }}m</span>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<article class="card">
+  <h2>Recommendations</h2>
+  <ul class="plain-list">
+    {% if data.focus_hours < data.meeting_hours / 2 %}
+    <li>Focus time is low relative to meetings — protect 90-minute blocks before lunch.</li>
+    {% else %}
+    <li>Focus/meeting balance looks healthy this period.</li>
+    {% endif %}
+    <li>Cluster external meetings on 2–3 days to keep deep-work days intact.</li>
+    <li>Use AI Planner to move low-priority internal syncs when deadlines approach.</li>
+  </ul>
+</article>
+{% endblock %}

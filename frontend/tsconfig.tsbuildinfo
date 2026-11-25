@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/aipanel.tsx","./src/components/layout.tsx","./src/components/recommendationcard.tsx","./src/lib/api.ts","./src/pages/calendar.tsx","./src/pages/insights.tsx","./src/pages/planner.tsx","./src/pages/tasks.tsx","./src/pages/today.tsx","./src/pages/workspace.tsx"],"version":"5.8.3"}

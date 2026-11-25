@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f7f5;
+  --bg-elevated: #ffffff;
+  --ink: #171717;
+  --muted: #737373;
+  --line: #e8e8e3;
+  --line-strong: #d4d4d0;
+  --accent: #0f766e;
+  --accent-soft: #ecfdf8;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(23, 23, 23, 0.04), 0 8px 24px rgba(23, 23, 23, 0.03);
+  --font: "Manrope", ui-sans-serif, sans-serif;
+  --font-display: "Source Serif 4", Georgia, serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #eef7f4 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #f3f1ea 0%, transparent 50%),
+    var(--bg);
+  font-family: var(--font);
+  font-feature-settings: "ss01" on;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body { margin: 0; }
+input, textarea, select { font: inherit; color: inherit; }
+button {
+  font: inherit;
+  cursor: pointer;
+  /* Do not force color: inherit — it overrides Tailwind text-white on dark buttons */
+}
+a { color: inherit; text-decoration: none; }
+
+.font-display { font-family: var(--font-display); }
+
+.surface {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: var(--ink);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, color 0.15s ease;
+}
+.btn:hover { background: #fafafa; color: var(--ink); }
+.btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, white);
+  outline-offset: 2px;
+}
+.btn:active { transform: translateY(0.5px); }
+.btn-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.btn-primary:hover { background: #2a2a2a; color: #fff; }
+.btn-primary:focus-visible { color: #fff; }
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.btn-ghost:hover { background: rgba(0,0,0,0.04); color: var(--ink); }
+
+.input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.65rem 0.8rem;
+  background: #fff;
+  outline: none;
+}
+.input:focus { border-color: #a3a3a3; box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.08); }
+
+.cat-meeting { --accent: #2563eb; }
+.cat-focus { --accent: #0f766e; }
+.cat-personal { --accent: #7c3aed; }
+.cat-task { --accent: #d97706; }
+.cat-important { --accent: #dc2626; }
+.cat-break { --accent: #94a3b8; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.35s ease both; }

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Tasks · Cal.ai{% endblock %}
+{% block header_date %}Tasks{% endblock %}
+{% block header_sub %}Deadlines and follow-ups{% endblock %}
+
+{% block content %}
+<section class="two-col">
+  <article class="card">
+    <h2>Open tasks</h2>
+    <ul class="task-list">
+      {% for t in tasks if t.status != 'done' %}
+      <li class="task-item">
+        <form method="post" action="/tasks/{{ t.id }}/toggle">
+          <button class="check" type="submit" title="Mark done">○</button>
+        </form>
+        <div class="task-body">
+          <strong>{{ t.title }}</strong>
+          {% if t.description %}<p class="muted">{{ t.description }}</p>{% endif %}
+          <div class="task-meta">
+            <span class="pill prio-{{ t.priority }}">{{ t.priority }}</span>
+            {% if t.due_date %}<span class="muted">Due {{ t.due_date.strftime('%b %d, %Y') }}</span>{% endif %}
+            <span class="muted">{{ t.estimated_minutes }} min</span>
+          </div>
+        </div>
+        <form method="post" action="/tasks/{{ t.id }}/delete">
+          <button class="icon-btn" type="submit" title="Delete">✕</button>
+        </form>
+      </li>
+      {% else %}
+      <li class="empty-state">No open tasks. Add one on the right.</li>
+      {% endfor %}
+    </ul>
+
+    <h2 class="mt">Completed</h2>
+    <ul class="task-list done-list">
+      {% for t in tasks if t.status == 'done' %}
+      <li class="task-item done">
+        <form method="post" action="/tasks/{{ t.id }}/toggle">
+          <button class="check" type="submit" title="Reopen">●</button>
+        </form>
+        <div class="task-body">
+          <strong>{{ t.title }}</strong>
+        </div>
+      </li>
+      {% else %}
+      <li class="muted">Nothing completed yet.</li>
+      {% endfor %}
+    </ul>
+  </article>
+
+  <article class="card">
+    <h2>Add task</h2>
+    <form method="post" action="/tasks" class="stack-form">
+      <label>Title
+        <input type="text" name="title" required />
+      </label>
+      <label>Description
+        <textarea name="description" rows="3"></textarea>
+      </label>
+      <label>Due date
+        <input type="datetime-local" name="due_date" />
+      </label>
+      <div class="form-row">
+        <label>Priority
+          <select name="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label>Estimate (min)
+          <input type="number" name="estimated_minutes" value="30" min="5" step="5" />
+        </label>
+      </div>
+      <button class="btn btn-primary" type="submit">Add task</button>
+    </form>
+  </article>
+</section>
+{% endblock %}

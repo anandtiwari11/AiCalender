@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}AI Planner · Cal.ai{% endblock %}
+{% block header_date %}AI Planner{% endblock %}
+{% block header_sub %}Propose changes · you confirm{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <h1>Plan with AI</h1>
+  <p class="lead">Describe what you need in plain English. Cal.ai reads your calendar and proposes changes — nothing is applied until you confirm.</p>
+</section>
+
+<section class="two-col">
+  <div class="stack">
+    <article class="card brief-card">
+      <div class="card-kicker">Today’s brief</div>
+      <p class="brief-text">{{ brief }}</p>
+    </article>
+
+    <article class="card">
+      <h2>Ask the planner</h2>
+      <form method="post" action="/ai/chat" class="stack-form">
+        <input type="hidden" name="redirect_to" value="/planner" />
+        <label>Natural language request
+          <textarea name="message" rows="4" required placeholder="e.g. Schedule a 45-minute meeting with Rahul tomorrow at 3 PM."></textarea>
+        </label>
+        <button class="btn btn-primary" type="submit">Generate proposal</button>
+      </form>
+
+      <div class="chip-row">
+        {% for s in suggestions %}
+        <form method="post" action="/ai/chat">
+          <input type="hidden" name="redirect_to" value="/planner" />
+          <input type="hidden" name="message" value="{{ s }}" />
+          <button type="submit" class="chip">{{ s }}</button>
+        </form>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+
+  <div class="stack">
+    <article class="card">
+      <h2>Pending proposals</h2>
+      {% if proposals %}
+        {% for p in proposals %}
+        <div class="proposal">
+          <strong>{{ p.summary }}</strong>
+          <pre class="proposal-json">{{ p.actions_json }}</pre>
+          <div class="btn-row">
+            <form method="post" action="/ai/proposals/{{ p.id }}/confirm">
+              <input type="hidden" name="redirect_to" value="/planner" />
+              <button class="btn btn-primary" type="submit">Confirm & apply</button>
+            </form>
+            <form method="post" action="/ai/proposals/{{ p.id }}/dismiss">
+              <input type="hidden" name="redirect_to" value="/planner" />
+              <button class="btn" type="submit">Dismiss</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-state">No pending proposals. Try a suggestion on the left.</p>
+      {% endif %}
+    </article>
+
+    <article class="card">
+      <h2>Tomorrow at a glance</h2>
+      <div class="stat-grid compact">
+        <div class="stat-card">
+          <div class="stat-label">Meetings</div>
+          <div class="stat-value">{{ tomorrow_stats.meetings_count }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Focus</div>
+          <div class="stat-value">{{ tomorrow_stats.focus_minutes }}m</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Free</div>
+          <div class="stat-value">{{ tomorrow_stats.available_minutes }}m</div>
+        </div>
+      </div>
+      <ul class="plain-list">
+        {% for e in tomorrow_stats.events %}
+        <li>{{ e.start_time.strftime('%H:%M') }} — {{ e.title }}</li>
+        {% else %}
+        <li class="muted">Nothing scheduled yet.</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </div>
+</section>
+{% endblock %}

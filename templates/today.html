@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Today · Cal.ai{% endblock %}
+{% block header_date %}{{ today.strftime('%A, %B %d, %Y') }}{% endblock %}
+{% block header_sub %}Daily dashboard{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <h1>{{ greeting }}, Anand</h1>
+  <p class="lead">Here’s an intelligent view of your day.</p>
+</section>
+
+<section class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">Meetings today</div>
+    <div class="stat-value">{{ stats.meetings_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Focus time</div>
+    <div class="stat-value">{{ stats.focus_minutes }}m</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Available</div>
+    <div class="stat-value">{{ stats.available_minutes }}m</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Pending tasks</div>
+    <div class="stat-value">{{ stats.pending_tasks | length }}</div>
+  </div>
+</section>
+
+<section class="two-col">
+  <div class="stack">
+    <article class="card brief-card">
+      <div class="card-kicker">AI Daily Brief</div>
+      <p class="brief-text">{{ brief }}</p>
+      <div class="btn-row">
+        <form method="post" action="/ai/quick">
+          <input type="hidden" name="action" value="optimize" />
+          <input type="hidden" name="redirect_to" value="/" />
+          <button class="btn btn-primary" type="submit">Optimize my day</button>
+        </form>
+        <form method="post" action="/ai/quick">
+          <input type="hidden" name="action" value="prepare" />
+          <input type="hidden" name="redirect_to" value="/" />
+          <button class="btn" type="submit">Prepare for next meeting</button>
+        </form>
+        <form method="post" action="/ai/quick">
+          <input type="hidden" name="action" value="free" />
+          <input type="hidden" name="redirect_to" value="/" />
+          <button class="btn" type="submit">Find free time</button>
+        </form>
+      </div>
+    </article>
+
+    {% if stats.upcoming %}
+    <article class="card">
+      <div class="card-kicker">Upcoming meeting</div>
+      <h3>{{ stats.upcoming.title }}</h3>
+      <p class="muted">
+        {{ stats.upcoming.start_time.strftime('%I:%M %p') }}
+        – {{ stats.upcoming.end_time.strftime('%I:%M %p') }}
+        {% if stats.upcoming.attendees %} · {{ stats.upcoming.attendees }}{% endif %}
+      </p>
+      {% if stats.upcoming.meeting_link %}
+      <a class="link" href="{{ stats.upcoming.meeting_link }}" target="_blank" rel="noopener">Join meeting</a>
+      {% endif %}
+    </article>
+    {% endif %}
+
+    {% if stats.overlaps %}
+    <article class="card warn-card">
+      <div class="card-kicker">Conflicts</div>
+      <ul class="plain-list">
+        {% for a, b in stats.overlaps %}
+        <li>“{{ a.title }}” overlaps “{{ b.title }}”</li>
+        {% endfor %}
+      </ul>
+    </article>
+    {% endif %}
+  </div>
+
+  <article class="card timeline-card">
+    <div class="card-head">
+      <h2>Daily timeline</h2>
+      <span class="muted small">Click a slot to create · click an event for details</span>
+    </div>
+    <div class="timeline" id="day-timeline">
+      {% for hour in range(8, 20) %}
+      <div class="timeline-row" data-hour="{{ hour }}" data-date="{{ today.strftime('%Y-%m-%d') }}">
+        <div class="timeline-time">{{ '%02d:00'|format(hour) }}</div>
+        <div class="timeline-track">
+          {% for e in stats.events %}
+            {% if e.start_time.hour == hour %}
+            <button
+              type="button"
+              class="timeline-event cat-{{ e.category }}"
+              data-event-id="{{ e.id }}"
+              style="--accent: {{ colors.get(e.category, '#64748B') }}"
+            >
+              <strong>{{ e.title }}</strong>
+              <span>{{ e.start_time.strftime('%H:%M') }}–{{ e.end_time.strftime('%H:%M') }}</span>
+            </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<aside class="card side-tasks">
+  <h2>Tasks needing attention</h2>
+  {% if stats.urgent_tasks %}
+  <ul class="task-mini">
+    {% for t in stats.urgent_tasks %}
+    <li>
+      <span class="prio prio-{{ t.priority }}"></span>
+      <div>
+        <strong>{{ t.title }}</strong>
+        <div class="muted small">
+          {% if t.due_date %}Due {{ t.due_date.strftime('%b %d') }} · {% endif %}
+          {{ t.estimated_minutes }} min
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No urgent tasks. Nice.</p>
+  {% endif %}
+</aside>
+{% endblock %}

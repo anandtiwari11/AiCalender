@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Calendar · Cal.ai{% endblock %}
+{% block header_date %}{{ day.strftime('%B %Y') if view == 'month' else day.strftime('%A, %B %d, %Y') }}{% endblock %}
+{% block header_sub %}{{ view|capitalize }} view{% endblock %}
+
+{% block header_actions %}
+<form class="search-form" method="get" action="/calendar">
+  <input type="hidden" name="view" value="{{ view }}" />
+  <input type="hidden" name="date" value="{{ day.strftime('%Y-%m-%d') }}" />
+  <input type="search" name="q" value="{{ q }}" placeholder="Search events…" />
+</form>
+<div class="seg">
+  <a class="seg-item {% if view == 'day' %}active{% endif %}" href="/calendar?view=day&date={{ day.strftime('%Y-%m-%d') }}">Day</a>
+  <a class="seg-item {% if view == 'week' %}active{% endif %}" href="/calendar?view=week&date={{ day.strftime('%Y-%m-%d') }}">Week</a>
+  <a class="seg-item {% if view == 'month' %}active{% endif %}" href="/calendar?view=month&date={{ day.strftime('%Y-%m-%d') }}">Month</a>
+</div>
+<a class="btn" href="/calendar?view={{ view }}&date={{ today_str }}">Today</a>
+<a class="btn" href="/calendar?view={{ view }}&date={{ prev_date }}">‹</a>
+<a class="btn" href="/calendar?view={{ view }}&date={{ next_date }}">›</a>
+{% endblock %}
+
+{% block content %}
+{% if view == 'month' %}
+<section class="card month-grid">
+  <div class="month-head">
+    {% for label in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+    <div>{{ label }}</div>
+    {% endfor %}
+  </div>
+  <div class="month-body">
+    {% for d in days %}
+    {% set key = d.strftime('%Y-%m-%d') %}
+    <div class="month-cell {% if d.month != day.month %}muted-month{% endif %} {% if key == today_str %}is-today{% endif %}"
+         data-date="{{ key }}" data-create-slot>
+      <div class="month-daynum">{{ d.day }}</div>
+      {% for e in events_by_day.get(key, [])[:3] %}
+      <button type="button" class="month-event cat-{{ e.category }}" data-event-id="{{ e.id }}"
+              style="--accent: {{ colors.get(e.category, '#64748B') }}">
+        {{ e.start_time.strftime('%H:%M') }} {{ e.title }}
+      </button>
+      {% endfor %}
+      {% if events_by_day.get(key, [])|length > 3 %}
+      <div class="muted small">+{{ events_by_day.get(key)|length - 3 }} more</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% elif view == 'week' %}
+<section class="card week-grid">
+  <div class="week-head">
+    <div class="week-corner"></div>
+    {% for d in days %}
+    <div class="week-dayhead {% if d.strftime('%Y-%m-%d') == today_str %}is-today{% endif %}">
+      <div class="small muted">{{ d.strftime('%a') }}</div>
+      <strong>{{ d.day }}</strong>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="week-body">
+    {% for hour in hours %}
+    <div class="week-row">
+      <div class="week-time">{{ '%02d:00'|format(hour) }}</div>
+      {% for d in days %}
+      {% set key = d.strftime('%Y-%m-%d') %}
+      <div class="week-cell" data-date="{{ key }}" data-hour="{{ hour }}" data-create-slot>
+        {% for e in events_by_day.get(key, []) %}
+          {% if e.start_time.hour == hour %}
+          <button type="button" class="week-event cat-{{ e.category }}" data-event-id="{{ e.id }}"
+                  style="--accent: {{ colors.get(e.category, '#64748B') }}">
+            <strong>{{ e.title }}</strong>
+            <span>{{ e.start_time.strftime('%H:%M') }}–{{ e.end_time.strftime('%H:%M') }}</span>
+          </button>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% else %}
+<section class="card">
+  <div class="timeline" id="day-timeline">
+    {% for hour in hours %}
+    <div class="timeline-row" data-hour="{{ hour }}" data-date="{{ day.strftime('%Y-%m-%d') }}">
+      <div class="timeline-time">{{ '%02d:00'|format(hour) }}</div>
+      <div class="timeline-track" data-create-slot data-date="{{ day.strftime('%Y-%m-%d') }}" data-hour="{{ hour }}">
+        {% for e in events %}
+          {% if e.start_time.hour == hour %}
+          <button type="button" class="timeline-event cat-{{ e.category }}" data-event-id="{{ e.id }}"
+                  style="--accent: {{ colors.get(e.category, '#64748B') }}">
+            <strong>{{ e.title }}</strong>
+            <span>{{ e.start_time.strftime('%H:%M') }}–{{ e.end_time.strftime('%H:%M') }}</span>
+            {% if e.attendees %}<span class="muted">{{ e.attendees }}</span>{% endif %}
+          </button>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="legend">
+  {% for cat, color in colors.items() %}
+  <span class="legend-item"><i style="background:{{ color }}"></i>{{ cat }}</span>
+  {% endfor %}
+</div>
+{% endblock %}
