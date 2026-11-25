@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.ai import apply_actions, daily_brief, get_ai_status, run_assistant
-from app.auth.deps import get_user_or_guest
+from app.auth.deps import get_google_user
 from app.calendar.factory import get_calendar_provider
 from app.database import get_db
 from app.models import AIMessage, PendingProposal, User
@@ -25,7 +25,7 @@ def ai_status():
 @router.get("/brief")
 def brief(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     provider = get_calendar_provider(db, user)
     return daily_brief(provider)
@@ -34,7 +34,7 @@ def brief(
 @router.get("/messages")
 def messages(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     rows = (
         db.query(AIMessage)
@@ -61,7 +61,7 @@ def messages(
 async def chat(
     body: ChatIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     provider = get_calendar_provider(db, user)
     db.add(AIMessage(user_id=user.id, role="user", content=body.message))
@@ -99,7 +99,7 @@ async def chat(
 @router.get("/proposals")
 def list_proposals(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     rows = (
         db.query(PendingProposal)
@@ -125,7 +125,7 @@ def list_proposals(
 def confirm_proposal(
     proposal_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     pending = (
         db.query(PendingProposal)
@@ -153,7 +153,7 @@ def confirm_proposal(
 def dismiss_proposal(
     proposal_id: int,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     pending = (
         db.query(PendingProposal)

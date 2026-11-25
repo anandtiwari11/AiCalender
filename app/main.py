@@ -12,8 +12,7 @@ from app.api.freebusy import router as freebusy_router
 from app.api.intelligence import router as intelligence_router
 from app.api.tasks import router as tasks_router
 from app.config import BASE_DIR, settings
-from app.database import Base, SessionLocal, engine
-from app.models import User
+from app.database import Base, engine
 
 app = FastAPI(title="Cal.ai API", description="AI-native calendar with Google Calendar integration")
 
@@ -39,14 +38,6 @@ FRONTEND_ASSETS = FRONTEND_DIST / "assets"
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        guest = db.query(User).filter(User.email == "guest@cal.ai").first()
-        if not guest:
-            db.add(User(email="guest@cal.ai", name="Guest", provider="mock"))
-            db.commit()
-    finally:
-        db.close()
 
 
 @app.get("/api/health")

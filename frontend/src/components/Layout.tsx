@@ -5,12 +5,14 @@ import {
   ChartNoAxesColumn,
   CheckSquare,
   LayoutDashboard,
+  LogOut,
   PanelRight,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { api, AuthStatus, googleConnectUrl } from "@/lib/api";
+import { api, AuthStatus } from "@/lib/api";
 import { AIPanel } from "./AIPanel";
+import { LoginGate } from "./LoginGate";
 
 const nav = [
   { to: "/", label: "Today", icon: LayoutDashboard },
@@ -23,6 +25,8 @@ const nav = [
 
 export function Layout({ onRefreshKey }: { onRefreshKey: () => void; refreshKey: number }) {
   const [auth, setAuth] = useState<AuthStatus | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [aiOpen, setAiOpen] = useState(true);
 
   const loadAuth = async () => {
@@ -30,14 +34,39 @@ export function Layout({ onRefreshKey }: { onRefreshKey: () => void; refreshKey:
       setAuth(await api.authStatus());
     } catch {
       setAuth(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("auth_error");
+    if (err) setAuthError(err);
+    if (params.get("connected") || err) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
     loadAuth();
   }, []);
 
-  const providerLabel = auth?.user?.provider === "google" ? "Google" : "Local";
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center text-sm text-[var(--muted)]">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!auth?.authenticated) {
+    return (
+      <LoginGate
+        oauthConfigured={Boolean(auth?.google_oauth_configured)}
+        error={authError}
+      />
+    );
+  }
+
+  const displayName = auth.user?.name || auth.user?.email || "Signed in";
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[220px_1fr]">
@@ -71,30 +100,19 @@ export function Layout({ onRefreshKey }: { onRefreshKey: () => void; refreshKey:
 
         <div className="mt-auto space-y-3 px-1">
           <div className="rounded-2xl border border-[var(--line)] bg-white p-3">
-            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Source</div>
-            <div className="mt-1 text-sm font-semibold">{providerLabel} calendar</div>
-            {auth?.google_oauth_configured ? (
-              auth?.user?.provider === "google" ? (
-                <button
-                  className="mt-2 text-xs text-[var(--muted)] underline underline-offset-2"
-                  onClick={async () => {
-                    await api.disconnectGoogle();
-                    await loadAuth();
-                    onRefreshKey();
-                  }}
-                >
-                  Disconnect
-                </button>
-              ) : (
-                <a className="mt-2 inline-block text-xs text-[var(--accent)] underline underline-offset-2" href={googleConnectUrl()}>
-                  Connect Google
-                </a>
-              )
-            ) : (
-              <div className="mt-2 text-[11px] leading-relaxed text-[var(--muted)]">
-                Add Google OAuth keys to connect a real calendar.
-              </div>
-            )}
+            <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Account</div>
+            <div className="mt-1 text-sm font-semibold truncate">{displayName}</div>
+            <div className="text-[11px] text-[var(--muted)] truncate">{auth.user?.email}</div>
+            <button
+              className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--muted)] underline underline-offset-2"
+              onClick={async () => {
+                await api.logout();
+                await loadAuth();
+                onRefreshKey();
+              }}
+            >
+              <LogOut size={12} /> Sign out
+            </button>
           </div>
           <button className="btn w-full" onClick={() => setAiOpen((v) => !v)}>
             <PanelRight size={14} />
@@ -115,16 +133,25 @@ export function Layout({ onRefreshKey }: { onRefreshKey: () => void; refreshKey:
                 })}
               </div>
               <div className="text-xs text-[var(--muted)] mt-0.5">
-                {auth?.user?.name || "Guest"} · {providerLabel}
+                {displayName} · Google Calendar
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button className="btn xl:hidden" onClick={() => setAiOpen((v) => !v)}>
                 Assistant
               </button>
-              <div className="h-9 w-9 rounded-full bg-[var(--ink)] text-white grid place-items-center text-xs font-semibold">
-                {(auth?.user?.name || "G").slice(0, 1).toUpperCase()}
-              </div>
+              {auth.user?.picture ? (
+                <img
+                  src={auth.user.picture}
+                  alt=""
+                  className="h-9 w-9 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-[var(--ink)] text-white grid place-items-center text-xs font-semibold">
+                  {displayName.slice(0, 1).toUpperCase()}
+                </div>
+              )}
             </div>
           </header>
           <div className="p-5 md:p-8 max-w-6xl fade-up">

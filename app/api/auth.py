@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.auth.deps import get_optional_user, get_user_or_guest
+from app.auth.deps import get_current_user, get_optional_user
 from app.auth.google_oauth import (
     build_authorize_url,
     exchange_code,
@@ -22,13 +22,24 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 _oauth_states: set[str] = set()
 
 
+def _is_google_user(user: User | None) -> bool:
+    return bool(user and user.provider == "google" and user.email != "guest@cal.ai")
+
+
 @router.get("/status")
 def auth_status(
+    db: Session = Depends(get_db),
     user: User | None = Depends(get_optional_user),
 ):
+    authenticated = _is_google_user(user)
+    has_calendar = False
+    if authenticated and user:
+        token = db.query(OAuthToken).filter(OAuthToken.user_id == user.id).first()
+        has_calendar = bool(token and (token.access_token or token.refresh_token))
     return {
-        "authenticated": bool(user and user.email != "guest@cal.ai"),
+        "authenticated": authenticated,
         "google_oauth_configured": settings.google_oauth_configured,
+        "has_calendar": has_calendar,
         "user": (
             {
                 "id": user.id,
@@ -37,7 +48,7 @@ def auth_status(
                 "picture": user.picture,
                 "provider": user.provider,
             }
-            if user
+            if authenticated and user
             else None
         ),
     }
@@ -75,12 +86,12 @@ async def google_callback(
 
     session = create_session_token(user.id)
     response = RedirectResponse(f"{settings.frontend_url}/?connected=1")
+    # Same-origin Render hosting: Lax+Secure is enough and more reliable than None.
     response.set_cookie(
         key=settings.session_cookie,
         value=session,
         httponly=True,
-        # Cross-site frontend/API hosting needs None+Secure; local uses Lax.
-        samesite="none" if settings.cookie_secure else "lax",
+        samesite="lax",
         max_age=settings.session_max_age,
         secure=settings.cookie_secure,
     )
@@ -88,26 +99,31 @@ async def google_callback(
 
 
 @router.post("/logout")
-def logout(
-    response: Response,
-    db: Session = Depends(get_db),
-    user: User | None = Depends(get_optional_user),
-):
-    # Keep Google tokens unless disconnect is requested; logout only clears session.
+def logout():
     response = JSONResponse({"ok": True})
-    response.delete_cookie(settings.session_cookie)
+    response.delete_cookie(
+        settings.session_cookie,
+        samesite="lax",
+        secure=settings.cookie_secure,
+    )
     return response
 
 
 @router.post("/disconnect-google")
 def disconnect_google(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_current_user),
 ):
     token = db.query(OAuthToken).filter(OAuthToken.user_id == user.id).first()
     if token:
         db.delete(token)
-    user.provider = "mock"
+    user.provider = "none"
     user.google_sub = None
     db.commit()
-    return {"ok": True, "provider": "mock"}
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(
+        settings.session_cookie,
+        samesite="lax",
+        secure=settings.cookie_secure,
+    )
+    return response

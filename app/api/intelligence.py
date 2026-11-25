@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.auth.deps import get_user_or_guest
+from app.auth.deps import get_google_user
 from app.calendar.factory import get_calendar_provider
 from app.database import get_db
 from app.intelligence.buffers import buffer_recommendations
@@ -79,7 +79,7 @@ def _store_proposal(db: Session, user: User, summary: str, actions: list[dict], 
 @router.get("/chief-of-staff")
 def chief_of_staff(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     prefs = preferences_dict(get_or_create_preferences(db, user))
     provider = get_calendar_provider(db, user)
@@ -94,7 +94,7 @@ def chief_of_staff(
 @router.get("/importance")
 def importance(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     provider = get_calendar_provider(db, user)
     start, end = _day_window()
@@ -112,7 +112,7 @@ def importance(
 @router.get("/conflicts")
 def conflicts(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     prefs = preferences_dict(get_or_create_preferences(db, user))
     provider = get_calendar_provider(db, user)
@@ -139,7 +139,7 @@ class ResolveConflictIn(BaseModel):
 def propose_conflict_resolution(
     body: ResolveConflictIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     actions = [
         {
@@ -160,7 +160,7 @@ def propose_conflict_resolution(
 @router.get("/focus")
 def focus(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     prefs = preferences_dict(get_or_create_preferences(db, user))
     provider = get_calendar_provider(db, user)
@@ -174,7 +174,7 @@ def focus(
 @router.post("/focus/protect")
 def protect_focus(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     prefs = preferences_dict(get_or_create_preferences(db, user))
     provider = get_calendar_provider(db, user)
@@ -207,7 +207,7 @@ def protect_focus(
 @router.get("/buffers")
 def buffers(
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     prefs = preferences_dict(get_or_create_preferences(db, user))
     provider = get_calendar_provider(db, user)
@@ -228,7 +228,7 @@ class ProposeRecommendationIn(BaseModel):
 def propose_recommendation(
     body: ProposeRecommendationIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     proposal_id = _store_proposal(db, user, body.summary, body.actions, body.kind)
     return {"proposal_id": proposal_id, "actions": body.actions}
@@ -253,7 +253,7 @@ class PrefsUpdate(BaseModel):
 
 
 @router.get("/preferences")
-def get_prefs(db: Session = Depends(get_db), user: User = Depends(get_user_or_guest)):
+def get_prefs(db: Session = Depends(get_db), user: User = Depends(get_google_user)):
     return preferences_dict(get_or_create_preferences(db, user))
 
 
@@ -261,7 +261,7 @@ def get_prefs(db: Session = Depends(get_db), user: User = Depends(get_user_or_gu
 def update_prefs(
     body: PrefsUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     row = get_or_create_preferences(db, user)
     data = body.model_dump(exclude_unset=True)

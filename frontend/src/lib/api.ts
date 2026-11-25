@@ -35,6 +35,7 @@ export type CalendarEvent = {
 export type AuthStatus = {
   authenticated: boolean;
   google_oauth_configured: boolean;
+  has_calendar?: boolean;
   user: {
     id: number;
     email: string;

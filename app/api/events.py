@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.auth.deps import get_user_or_guest
+from app.auth.deps import get_google_user
 from app.calendar.factory import get_calendar_provider
 from app.database import get_db
 from app.models import User
@@ -43,7 +43,7 @@ def list_events(
     start: str | None = None,
     end: str | None = None,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     now = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     start_dt = datetime.fromisoformat(start) if start else now - timedelta(days=1)
@@ -60,7 +60,7 @@ def list_events(
 def get_event(
     event_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     provider = get_calendar_provider(db, user)
     event = provider.get_event(event_id)
@@ -73,7 +73,7 @@ def get_event(
 def create_event(
     body: EventIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     provider = get_calendar_provider(db, user)
     event = provider.create_event(body.model_dump())
@@ -85,7 +85,7 @@ def update_event(
     event_id: str,
     body: EventUpdate,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     provider = get_calendar_provider(db, user)
     try:
@@ -99,7 +99,7 @@ def update_event(
 def delete_event(
     event_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     provider = get_calendar_provider(db, user)
     provider.delete_event(event_id)

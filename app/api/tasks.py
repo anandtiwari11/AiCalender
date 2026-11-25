@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.auth.deps import get_user_or_guest
+from app.auth.deps import get_google_user
 from app.database import get_db
 from app.models import Task, User
 
@@ -21,7 +21,7 @@ class TaskIn(BaseModel):
 
 
 @router.get("")
-def list_tasks(db: Session = Depends(get_db), user: User = Depends(get_user_or_guest)):
+def list_tasks(db: Session = Depends(get_db), user: User = Depends(get_google_user)):
     rows = (
         db.query(Task)
         .filter((Task.user_id == user.id) | (Task.user_id.is_(None)))
@@ -48,7 +48,7 @@ def list_tasks(db: Session = Depends(get_db), user: User = Depends(get_user_or_g
 def create_task(
     body: TaskIn,
     db: Session = Depends(get_db),
-    user: User = Depends(get_user_or_guest),
+    user: User = Depends(get_google_user),
 ):
     t = Task(user_id=user.id, **body.model_dump())
     db.add(t)
@@ -58,7 +58,7 @@ def create_task(
 
 
 @router.post("/{task_id}/toggle")
-def toggle_task(task_id: int, db: Session = Depends(get_db), user: User = Depends(get_user_or_guest)):
+def toggle_task(task_id: int, db: Session = Depends(get_db), user: User = Depends(get_google_user)):
     t = db.get(Task, task_id)
     if not t:
         raise HTTPException(404, "Task not found")
@@ -68,7 +68,7 @@ def toggle_task(task_id: int, db: Session = Depends(get_db), user: User = Depend
 
 
 @router.delete("/{task_id}")
-def delete_task(task_id: int, db: Session = Depends(get_db), user: User = Depends(get_user_or_guest)):
+def delete_task(task_id: int, db: Session = Depends(get_db), user: User = Depends(get_google_user)):
     t = db.get(Task, task_id)
     if t:
         db.delete(t)
