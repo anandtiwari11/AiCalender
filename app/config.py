@@ -60,9 +60,22 @@ class Settings:
     session_cookie: str = "calai_session"
     session_max_age: int = 60 * 60 * 24 * 14  # 14 days
 
+    # Optional Twilio for real SMS OTP. Without it, OTP is echoed in the API (prototype).
+    twilio_account_sid: str = _env("TWILIO_ACCOUNT_SID")
+    twilio_auth_token: str = _env("TWILIO_AUTH_TOKEN")
+    twilio_from_number: str = _env("TWILIO_FROM_NUMBER")
+    # Force returning OTP in API response (useful on Render before Twilio is set).
+    otp_dev_echo: bool = _env("OTP_DEV_ECHO", "true").lower() in {"1", "true", "yes"}
+
     @property
     def google_oauth_configured(self) -> bool:
         return bool(self.google_client_id and self.google_client_secret)
+
+    @property
+    def twilio_configured(self) -> bool:
+        return bool(
+            self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number
+        )
 
 
 settings = Settings()

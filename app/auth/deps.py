@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.session import decode_session_token
 from app.database import get_db
-from app.models import OAuthToken, User
+from app.models import User
 
 
 def _user_from_cookie(db: Session, cookie_value: str | None) -> User | None:
@@ -30,14 +30,5 @@ async def get_current_user(
     return user
 
 
-async def get_google_user(
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-) -> User:
-    """Require a signed-in Google user with calendar tokens."""
-    if user.provider != "google" or user.email == "guest@cal.ai":
-        raise HTTPException(status_code=401, detail="Google sign-in required")
-    token = db.query(OAuthToken).filter(OAuthToken.user_id == user.id).first()
-    if not token or not (token.access_token or token.refresh_token):
-        raise HTTPException(status_code=401, detail="Google Calendar not connected")
-    return user
+# Back-compat alias — phone and Google users are both first-class.
+get_google_user = get_current_user

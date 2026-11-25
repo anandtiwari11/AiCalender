@@ -62,11 +62,19 @@ export function Layout({ onRefreshKey }: { onRefreshKey: () => void; refreshKey:
       <LoginGate
         oauthConfigured={Boolean(auth?.google_oauth_configured)}
         error={authError}
+        onSignedIn={async () => {
+          await loadAuth();
+          onRefreshKey();
+        }}
       />
     );
   }
 
-  const displayName = auth.user?.name || auth.user?.email || "Signed in";
+  const displayName = auth.user?.name || auth.user?.phone || auth.user?.email || "Signed in";
+  const calendarLabel =
+    auth.calendar_source === "google" || auth.has_calendar
+      ? "Google Calendar"
+      : "Local calendar (Cal.ai DB)";
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[220px_1fr]">
@@ -102,7 +110,18 @@ export function Layout({ onRefreshKey }: { onRefreshKey: () => void; refreshKey:
           <div className="rounded-2xl border border-[var(--line)] bg-white p-3">
             <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Account</div>
             <div className="mt-1 text-sm font-semibold truncate">{displayName}</div>
-            <div className="text-[11px] text-[var(--muted)] truncate">{auth.user?.email}</div>
+            <div className="text-[11px] text-[var(--muted)] truncate">
+              {auth.user?.phone || auth.user?.email}
+            </div>
+            <div className="text-[11px] text-[var(--muted)] mt-1">{calendarLabel}</div>
+            {auth.calendar_source !== "google" && auth.google_oauth_configured ? (
+              <a
+                className="mt-2 inline-flex text-xs text-[var(--accent)] underline underline-offset-2"
+                href="/api/auth/google/start"
+              >
+                Connect Google Calendar
+              </a>
+            ) : null}
             <button
               className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--muted)] underline underline-offset-2"
               onClick={async () => {
@@ -133,7 +152,7 @@ export function Layout({ onRefreshKey }: { onRefreshKey: () => void; refreshKey:
                 })}
               </div>
               <div className="text-xs text-[var(--muted)] mt-0.5">
-                {displayName} · Google Calendar
+                {displayName} · {calendarLabel}
               </div>
             </div>
             <div className="flex items-center gap-2">

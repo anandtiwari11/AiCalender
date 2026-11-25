@@ -1,16 +1,22 @@
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.calendar.base import CalendarProvider
 from app.calendar.google_provider import GoogleCalendarProvider
+from app.calendar.mock import MockCalendarProvider
 from app.models import OAuthToken, User
 
 
-def get_calendar_provider(db: Session, user: User | None) -> CalendarProvider:
-    """Only real Google Calendar — no mock fallback."""
-    if not user or user.provider != "google":
-        raise HTTPException(status_code=401, detail="Google sign-in required")
+def user_has_google_calendar(db: Session, user: User | None) -> bool:
+    if not user:
+        return False
     token = db.query(OAuthToken).filter(OAuthToken.user_id == user.id).first()
-    if not token or not (token.access_token or token.refresh_token):
-        raise HTTPException(status_code=401, detail="Google Calendar not connected")
-    return GoogleCalendarProvider(db, user)
+    return bool(token and (token.access_token or token.refresh_token))
+
+
+def get_calendar_provider(db: Session, user: User | None) -> CalendarProvider:
+    """Google Calendar when connected; otherwise local DB events for this user."""
+    if not user:
+        return MockCalendarProvider(db, user_id=None)
+    if user_has_google_calendar(db, user):
+        return GoogleCalendarProvider(db, user)
+    return MockCalendarProvider(db, user_id=user.id)

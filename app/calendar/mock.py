@@ -27,7 +27,7 @@ def _as_dt(value: Any) -> datetime:
 
 
 class MockCalendarProvider(CalendarProvider):
-    name = "mock"
+    name = "local"
 
     def __init__(self, db: Session, user_id: int | None = None):
         self.db = db
@@ -52,7 +52,7 @@ class MockCalendarProvider(CalendarProvider):
             priority=row.priority or "medium",
             meeting_link=row.meeting_link or "",
             notes=row.notes or "",
-            source="mock",
+            source="local",
         )
 
     def list_events(self, start: datetime, end: datetime) -> list[CalendarEvent]:

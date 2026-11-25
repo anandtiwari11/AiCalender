@@ -12,12 +12,28 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     google_sub: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    phone: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(255), default="")
     picture: Mapped[str] = mapped_column(String(500), default="")
-    provider: Mapped[str] = mapped_column(String(32), default="mock")  # mock | google
+    # Auth channel: phone | google (calendar source is derived from OAuth tokens)
+    provider: Mapped[str] = mapped_column(String(32), default="phone")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     tokens: Mapped[list["OAuthToken"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+
+class PhoneOtp(Base):
+    """One-time codes for phone sign-in."""
+
+    __tablename__ = "phone_otps"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    phone: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
+    code_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    consumed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class OAuthToken(Base):

@@ -58,23 +58,7 @@ async def fetch_userinfo(access_token: str) -> dict:
         return resp.json()
 
 
-def upsert_google_user(db: Session, userinfo: dict, token_payload: dict) -> User:
-    sub = userinfo.get("sub")
-    email = userinfo.get("email") or f"{sub}@google.local"
-    user = db.query(User).filter(User.google_sub == sub).first()
-    if not user:
-        user = db.query(User).filter(User.email == email).first()
-    if not user:
-        user = User(email=email, google_sub=sub)
-        db.add(user)
-
-    user.google_sub = sub
-    user.email = email
-    user.name = userinfo.get("name") or user.name or email
-    user.picture = userinfo.get("picture") or ""
-    user.provider = "google"
-    db.flush()
-
+def _apply_google_tokens(db: Session, user: User, token_payload: dict) -> None:
     expires_in = int(token_payload.get("expires_in") or 3600)
     expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
     token_row = db.query(OAuthToken).filter(OAuthToken.user_id == user.id).first()
@@ -91,6 +75,43 @@ def upsert_google_user(db: Session, userinfo: dict, token_payload: dict) -> User
     token_row.expires_at = expires_at
     token_row.updated_at = datetime.utcnow()
 
+
+def link_google_to_user(db: Session, user: User, userinfo: dict, token_payload: dict) -> User:
+    """Attach Google identity + calendar tokens to an existing (e.g. phone) account."""
+    sub = userinfo.get("sub")
+    clash = db.query(User).filter(User.google_sub == sub, User.id != user.id).first()
+    if clash:
+        raise ValueError("This Google account is already linked to another Cal.ai user")
+    user.google_sub = sub
+    if userinfo.get("email"):
+        user.email = userinfo["email"]
+    user.name = userinfo.get("name") or user.name or user.email
+    user.picture = userinfo.get("picture") or user.picture or ""
+    user.provider = "google"
+    db.flush()
+    _apply_google_tokens(db, user, token_payload)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def upsert_google_user(db: Session, userinfo: dict, token_payload: dict) -> User:
+    sub = userinfo.get("sub")
+    email = userinfo.get("email") or f"{sub}@google.local"
+    user = db.query(User).filter(User.google_sub == sub).first()
+    if not user:
+        user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, google_sub=sub)
+        db.add(user)
+
+    user.google_sub = sub
+    user.email = email
+    user.name = userinfo.get("name") or user.name or email
+    user.picture = userinfo.get("picture") or ""
+    user.provider = "google"
+    db.flush()
+    _apply_google_tokens(db, user, token_payload)
     db.commit()
     db.refresh(user)
     return user

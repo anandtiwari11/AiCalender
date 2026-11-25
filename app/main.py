@@ -12,7 +12,7 @@ from app.api.freebusy import router as freebusy_router
 from app.api.intelligence import router as intelligence_router
 from app.api.tasks import router as tasks_router
 from app.config import BASE_DIR, settings
-from app.database import Base, engine
+from app.database import ensure_schema
 from app.legal_pages import ABOUT_HTML, PRIVACY_HTML, TERMS_HTML
 
 app = FastAPI(title="Cal.ai API", description="AI-native calendar with Google Calendar integration")
@@ -38,7 +38,7 @@ FRONTEND_ASSETS = FRONTEND_DIST / "assets"
 
 @app.on_event("startup")
 def on_startup():
-    Base.metadata.create_all(bind=engine)
+    ensure_schema()
 
 
 @app.get("/api/health")

@@ -12,6 +12,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const text = await res.text();
+    try {
+      const parsed = JSON.parse(text) as { detail?: string | { msg?: string }[] };
+      if (typeof parsed.detail === "string") throw new Error(parsed.detail);
+      if (Array.isArray(parsed.detail) && parsed.detail[0]?.msg) {
+        throw new Error(parsed.detail[0].msg);
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message !== text) throw e;
+    }
     throw new Error(text || res.statusText);
   }
   return res.json() as Promise<T>;
@@ -36,9 +45,13 @@ export type AuthStatus = {
   authenticated: boolean;
   google_oauth_configured: boolean;
   has_calendar?: boolean;
+  calendar_source?: "google" | "local" | null;
+  phone_auth_available?: boolean;
+  otp_dev_echo?: boolean;
   user: {
     id: number;
     email: string;
+    phone?: string | null;
     name: string;
     picture: string;
     provider: string;
@@ -48,6 +61,16 @@ export type AuthStatus = {
 export const api = {
   health: () => request<{ ok: boolean; google_oauth_configured: boolean }>("/api/health"),
   authStatus: () => request<AuthStatus>("/api/auth/status"),
+  phoneStart: (phone: string) =>
+    request<{ ok: boolean; phone: string; sms_sent: boolean; dev_otp?: string }>(
+      "/api/auth/phone/start",
+      { method: "POST", body: JSON.stringify({ phone }) }
+    ),
+  phoneVerify: (phone: string, code: string) =>
+    request<{ ok: boolean; calendar_source: string }>("/api/auth/phone/verify", {
+      method: "POST",
+      body: JSON.stringify({ phone, code }),
+    }),
   logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   disconnectGoogle: () =>
     request<{ ok: boolean }>("/api/auth/disconnect-google", { method: "POST" }),
