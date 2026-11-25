@@ -12,8 +12,13 @@ import { api, CalendarEvent } from "@/lib/api";
 
 type View = "day" | "week" | "month";
 
+function initialView(): View {
+  if (typeof window !== "undefined" && window.innerWidth < 768) return "day";
+  return "week";
+}
+
 export function CalendarPage({ refreshKey }: { refreshKey: number }) {
-  const [view, setView] = useState<View>("week");
+  const [view, setView] = useState<View>(initialView);
   const [cursor, setCursor] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [provider, setProvider] = useState("mock");
@@ -167,9 +172,9 @@ export function CalendarPage({ refreshKey }: { refreshKey: number }) {
         </form>
       )}
 
-      <div className="rounded-xl border bg-white overflow-auto shadow-sm">
+      <div className="rounded-xl border bg-white overflow-x-auto shadow-sm -mx-1 px-1 sm:mx-0 sm:px-0">
         {view === "month" ? (
-          <div className="grid grid-cols-7 min-w-[800px]">
+          <div className="grid grid-cols-7 min-w-[560px] sm:min-w-[800px]">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
               <div key={d} className="p-2 text-xs text-gray-500 font-semibold text-center border-b">
                 {d}
@@ -201,10 +206,15 @@ export function CalendarPage({ refreshKey }: { refreshKey: number }) {
             })}
           </div>
         ) : (
-          <div className="min-w-[700px]">
+          <div className={view === "day" ? "min-w-0" : "min-w-[560px] sm:min-w-[700px]"}>
             <div
               className="grid border-b bg-gray-50"
-              style={{ gridTemplateColumns: `64px repeat(${days.length}, minmax(110px, 1fr))` }}
+              style={{
+                gridTemplateColumns:
+                  view === "day"
+                    ? "52px 1fr"
+                    : `52px repeat(${days.length}, minmax(88px, 1fr))`,
+              }}
             >
               <div />
               {days.map((d) => (
@@ -217,8 +227,13 @@ export function CalendarPage({ refreshKey }: { refreshKey: number }) {
             {Array.from({ length: 12 }, (_, i) => i + 8).map((hour) => (
               <div
                 key={hour}
-                className="grid border-b min-h-16"
-                style={{ gridTemplateColumns: `64px repeat(${days.length}, minmax(110px, 1fr))` }}
+                className="grid border-b min-h-14 sm:min-h-16"
+                style={{
+                  gridTemplateColumns:
+                    view === "day"
+                      ? "52px 1fr"
+                      : `52px repeat(${days.length}, minmax(88px, 1fr))`,
+                }}
               >
                 <div className="p-2 text-xs text-gray-500">{String(hour).padStart(2, "0")}:00</div>
                 {days.map((d) => {

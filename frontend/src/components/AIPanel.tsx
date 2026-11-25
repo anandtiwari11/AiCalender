@@ -3,7 +3,14 @@ import { api } from "@/lib/api";
 
 type Msg = { role: string; content: string };
 
-export function AIPanel({ onApplied }: { onApplied: () => void }) {
+export function AIPanel({
+  onApplied,
+  embedded = false,
+}: {
+  onApplied: () => void;
+  /** Full-height panel inside a mobile sheet (no sticky sidebar chrome). */
+  embedded?: boolean;
+}) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState("");
@@ -63,20 +70,40 @@ export function AIPanel({ onApplied }: { onApplied: () => void }) {
   };
 
   return (
-    <aside className="border-l border-[var(--line)] bg-white/80 backdrop-blur-md h-[100dvh] sticky top-0 flex flex-col">
-      <div className="p-5 border-b border-[var(--line)]">
-        <div className="font-display text-lg">Assistant</div>
-        <div className="text-xs text-[var(--muted)] mt-0.5">Confirm before any calendar change</div>
-        <div
-          className={`mt-3 inline-flex text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-            status.toLowerCase().includes("connected")
-              ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-              : "bg-[#fff7ed] text-[var(--warn)]"
-          }`}
-        >
-          {status || "…"}
+    <aside
+      className={
+        embedded
+          ? "h-full bg-white flex flex-col min-h-0"
+          : "border-l border-[var(--line)] bg-white/80 backdrop-blur-md h-[100dvh] sticky top-0 flex flex-col"
+      }
+    >
+      {!embedded ? (
+        <div className="p-5 border-b border-[var(--line)]">
+          <div className="font-display text-lg">Assistant</div>
+          <div className="text-xs text-[var(--muted)] mt-0.5">Confirm before any calendar change</div>
+          <div
+            className={`mt-3 inline-flex text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+              status.toLowerCase().includes("connected")
+                ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                : "bg-[#fff7ed] text-[var(--warn)]"
+            }`}
+          >
+            {status || "…"}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="px-4 pt-2 pb-1">
+          <div
+            className={`inline-flex text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+              status.toLowerCase().includes("connected")
+                ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                : "bg-[#fff7ed] text-[var(--warn)]"
+            }`}
+          >
+            {status || "…"}
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto p-4 space-y-3">
         {messages.length === 0 && (
