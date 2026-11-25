@@ -15,8 +15,9 @@ class Settings:
     app_name: str = "Cal.ai"
     secret_key: str = _env("SECRET_KEY", "dev-secret-change-me")
     database_url: str = _env("DATABASE_URL", f"sqlite:///{BASE_DIR / 'calai.db'}")
-    frontend_url: str = _env("FRONTEND_URL", "http://localhost:5173")
-    backend_url: str = _env("BACKEND_URL", "http://127.0.0.1:8000")
+    # Prefer explicit URLs; on Render fall back to RENDER_EXTERNAL_URL (same host for SPA+API).
+    frontend_url: str = _env("FRONTEND_URL") or _env("RENDER_EXTERNAL_URL", "http://localhost:5173")
+    backend_url: str = _env("BACKEND_URL") or _env("RENDER_EXTERNAL_URL", "http://127.0.0.1:8000")
     # Comma-separated extra origins for production (Vercel preview URLs, etc.)
     cors_origins: str = _env("CORS_ORIGINS", "")
     cookie_secure: bool = _env("COOKIE_SECURE", "false").lower() in {"1", "true", "yes"}
@@ -28,6 +29,9 @@ class Settings:
             "http://localhost:5173",
             "http://127.0.0.1:5173",
         ]
+        render_url = _env("RENDER_EXTERNAL_URL")
+        if render_url and render_url not in origins:
+            origins.append(render_url)
         for part in self.cors_origins.split(","):
             origin = part.strip()
             if origin and origin not in origins:

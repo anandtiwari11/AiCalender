@@ -1,13 +1,10 @@
-# Deploy backend on Render: https://render.com
-# After deploy, put the API URL into Vercel as VITE_API_BASE.
-
+# Full-stack Cal.ai on Render (Docker builds FE + FastAPI serves it).
 services:
   - type: web
-    name: calai-api
-    runtime: python
+    name: calai
+    runtime: docker
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -15,10 +12,6 @@ services:
         value: production
       - key: COOKIE_SECURE
         value: "true"
-      - key: FRONTEND_URL
-        sync: false
-      - key: CORS_ORIGINS
-        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
